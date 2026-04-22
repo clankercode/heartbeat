@@ -49,11 +49,11 @@ fn main() {
     );
 
     loop {
+        thread::sleep(duration);
         if args.print_datetime {
             println!("{} {}", Local::now().format("%Y-%m-%d %H:%M:%S%.3f"), args.message);
         } else {
             println!("{}", args.message);
         }
-        thread::sleep(duration);
     }
 }
