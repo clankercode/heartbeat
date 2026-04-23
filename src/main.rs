@@ -1,4 +1,4 @@
-use chrono::{DateTime, Duration as ChronoDuration, Local};
+use chrono::{DateTime, Duration as ChronoDuration, Local, Utc};
 use clap::Parser;
 use regex::Regex;
 use std::sync::OnceLock;
@@ -85,6 +85,20 @@ struct Args {
         help = "Prefix each message with a timestamp (YYYY-MM-DD HH:MM:SS.mmm)"
     )]
     print_datetime: bool,
+
+    #[arg(
+        long,
+        default_value = "true",
+        help = "Prefix each output line with [HH:MM] showing current time"
+    )]
+    time_prefix: bool,
+
+    #[arg(
+        long,
+        default_value = "false",
+        help = "Use UTC timezone for time prefix instead of local"
+    )]
+    time_prefix_utc: bool,
 
     #[arg(
         help = "How often to fire. Plain (30m, 2h30m) or aligned (@15m, @1h+15m). \
@@ -267,14 +281,25 @@ fn main() {
         };
         let wait = (next - now).to_std().unwrap_or(Duration::ZERO);
         thread::sleep(wait);
+        let prefix = if args.time_prefix {
+            let time = if args.time_prefix_utc {
+                Utc::now().format("%H:%M")
+            } else {
+                Local::now().format("%H:%M")
+            };
+            format!("[{}] ", time)
+        } else {
+            String::new()
+        };
         if args.print_datetime {
             println!(
-                "{} {}",
+                "{}{} {}",
+                prefix,
                 Local::now().format("%Y-%m-%d %H:%M:%S%.3f"),
                 args.message
             );
         } else {
-            println!("{}", args.message);
+            println!("{}{}", prefix, args.message);
         }
     }
 }
