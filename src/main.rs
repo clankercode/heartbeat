@@ -106,6 +106,13 @@ See --help for full syntax."
     )]
     interval: String,
 
+    #[arg(
+        short = 'n',
+        long = "nb-iters",
+        help = "Number of times to fire before exiting (default: run forever)"
+    )]
+    nb_iters: Option<u64>,
+
     #[arg(help = "Message to print on each firing")]
     message: String,
 }
@@ -271,7 +278,13 @@ fn main() {
         );
     }
 
+    let mut iters: u64 = 0;
     loop {
+        if let Some(max) = args.nb_iters {
+            if iters >= max {
+                break;
+            }
+        }
         let now = Local::now();
         let next = if schedule.aligned {
             compute_next_fire(now, &schedule)
@@ -291,16 +304,21 @@ fn main() {
         } else {
             String::new()
         };
+        let countdown = args.nb_iters.map(|max| {
+            let remaining = max - iters;
+            format!("[{}/{}] ", remaining, max)
+        }).unwrap_or_default();
         if args.print_datetime {
             let datetime_str = if args.time_prefix_utc {
                 next.with_timezone(&Utc).format("%Y-%m-%d %H:%M:%S%.3f").to_string()
             } else {
                 next.format("%Y-%m-%d %H:%M:%S%.3f").to_string()
             };
-            println!("{}{} {}", prefix, datetime_str, args.message);
+            println!("{}{}{} {}", prefix, countdown, datetime_str, args.message);
         } else {
-            println!("{}{}", prefix, args.message);
+            println!("{}{}{}", prefix, countdown, args.message);
         }
+        iters += 1;
     }
 }
 
