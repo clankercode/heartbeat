@@ -282,22 +282,22 @@ fn main() {
         let wait = (next - now).to_std().unwrap_or(Duration::ZERO);
         thread::sleep(wait);
         let prefix = if args.time_prefix {
-            let time = if args.time_prefix_utc {
-                Utc::now().format("%H:%M")
+            let time_str = if args.time_prefix_utc {
+                next.with_timezone(&Utc).format("%H:%M").to_string()
             } else {
-                Local::now().format("%H:%M")
+                next.format("%H:%M").to_string()
             };
-            format!("[{}] ", time)
+            format!("[{}] ", time_str)
         } else {
             String::new()
         };
         if args.print_datetime {
-            println!(
-                "{}{} {}",
-                prefix,
-                Local::now().format("%Y-%m-%d %H:%M:%S%.3f"),
-                args.message
-            );
+            let datetime_str = if args.time_prefix_utc {
+                next.with_timezone(&Utc).format("%Y-%m-%d %H:%M:%S%.3f").to_string()
+            } else {
+                next.format("%Y-%m-%d %H:%M:%S%.3f").to_string()
+            };
+            println!("{}{} {}", prefix, datetime_str, args.message);
         } else {
             println!("{}{}", prefix, args.message);
         }
@@ -413,5 +413,21 @@ mod tests {
         assert_eq!(format_duration(d(15 * 60_000)), "15m");
         assert_eq!(format_duration(d(500)), "500ms");
         assert_eq!(format_duration(Duration::ZERO), "0s");
+    }
+
+    #[test]
+    fn time_prefix_format_local() {
+        let local_time = Local::now();
+        let formatted = local_time.format("%H:%M").to_string();
+        assert_eq!(formatted.len(), 5);
+        assert!(formatted.chars().nth(2) == Some(':'));
+    }
+
+    #[test]
+    fn time_prefix_format_utc() {
+        let utc_time = Utc::now();
+        let formatted = utc_time.format("%H:%M").to_string();
+        assert_eq!(formatted.len(), 5);
+        assert!(formatted.chars().nth(2) == Some(':'));
     }
 }
